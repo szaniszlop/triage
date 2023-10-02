@@ -1,4 +1,7 @@
-#Idea is to simulate a rest API for handling rules and rule sets
+# Quality Assurance 
+Idea is to simulate a rest API for handling rules and rule sets for quality assurance.
+
+## Analysis
 
 **Entities:**
 - QualityAssurance
@@ -64,6 +67,20 @@
     - only approved rule sets - status APPROVED - are considered by a QualityAssurance run
 
 
+### Rule Set Status changes
+```mermaid
+stateDiagram
+[*] --> DRAFT : create
+DRAFT --> IN_REVIEW : request approval
+IN_REVIEW --> APPROVED : approve
+IN_REVIEW --> DRAFT : modify
+APPROVED --> DRAFT : modify
+DRAFT --> DISABLED : disable
+IN_REVIEW  --> DISABLED : disable
+APPROVED --> DISABLED : disable
+DISABLED --> DRAFT : modify
+```
+
 - selector
     - is a combination of business unit and status
     - used to identify root elements to be processed by a rule set
@@ -74,6 +91,7 @@
     - represents an action to be performed on the entity root
     - usually an state change into a target state
 
+### Entity diagram
 
 ```mermaid
 classDiagram
