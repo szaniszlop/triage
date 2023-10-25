@@ -1,9 +1,14 @@
 package com.psz.restdemo.domain.metadata.rest;
 
 
-import org.springframework.hateoas.CollectionModel;
-import org.springframework.hateoas.RepresentationModel;
+import java.util.stream.StreamSupport;
 
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.server.core.Relation;
+
+import com.psz.restdemo.domain.metadata.Tenant;
 import com.psz.restdemo.security.SecurityLabel;
 import com.psz.restdemo.security.SecurityLabelHolder;
 
@@ -20,11 +25,11 @@ import lombok.ToString;
 @Getter
 @ToString
 @EqualsAndHashCode(callSuper=false)
-public class TenantModel extends RepresentationModel<TenantModel> implements SecurityLabelHolder{
+@Relation(collectionRelation = "tenants", itemRelation = "tenant")
+public class TenantModel extends RepresentationModel<TenantModel> implements SecurityLabelHolder, Tenant{
     private String id;
     private String name;
     private CollectionModel<BusinessUnitModel> businessUnits;
-
 
     @Override
     public SecurityLabel getSecurityLabel() {

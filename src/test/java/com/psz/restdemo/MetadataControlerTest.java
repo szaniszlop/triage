@@ -23,6 +23,7 @@ import com.psz.restdemo.domain.metadata.model.TenantEntity;
 import com.psz.restdemo.domain.metadata.model.TenantEntityBuilder;
 import com.psz.restdemo.domain.metadata.rest.BusinessUntitModelAssembler;
 import com.psz.restdemo.domain.metadata.rest.MetadataController;
+import com.psz.restdemo.domain.metadata.rest.TenantDto;
 import com.psz.restdemo.domain.metadata.rest.TenantModelAssembler;
 import com.psz.restdemo.security.Scopes;
 import com.psz.restdemo.security.SecurityLabelAuthorizationLogic;
@@ -58,13 +59,13 @@ class MetadataControlerTest {
 	MetadataServiceImpl service;
 
 	@Captor
-	ArgumentCaptor<TenantEntity> tenantEntityArgumentCaptor;
+	ArgumentCaptor<TenantDto> tenantDtoArgumentCaptor;
 
 
 	@Test
 	@WithAnonymousUser
 	void givenRequestIsAnonymous_whenGetTenants_thenUnauthorized() throws Exception {
-		mockMvc.perform(get("/api/v1/public/tenants")
+		mockMvc.perform(get("/api/v1/tenants/public")
 		.with(anonymous()))
 		.andExpect(status().isUnauthorized()) ;
 	}
@@ -72,7 +73,7 @@ class MetadataControlerTest {
 	@Test
 	void givenUserAuthenticated_whenGetTenants_thenOk() throws Exception{
 		String response = mockMvc.perform(
-			get("/api/v1/admin/tenants")
+			get("/api/v1/tenants/admin")
 			.with(  oauth2Login().authorities(
 					List.of(new SimpleGrantedAuthority(Scopes.ADMIN),
 							new SimpleGrantedAuthority(TenantAuthorization.READ)))))
@@ -84,7 +85,7 @@ class MetadataControlerTest {
 	@Test
 	void givenUserAuthenticatedButNotAdmin_whenGetTenants_thenOk() throws Exception{
 		String response = mockMvc.perform(
-			get("/api/v1/admin/tenants")
+			get("/api/v1/tenants/admin")
 			.with(  oauth2Login().authorities(
 					List.of(new SimpleGrantedAuthority(TenantAuthorization.READ)))))
 			.andExpect(status().isForbidden())
@@ -100,7 +101,7 @@ class MetadataControlerTest {
 			.thenAnswer(x -> Optional.of(tenant));
 
 		String response = mockMvc.perform(
-			get("/api/v1/public/tenant/" + myTenant)
+			get("/api/v1/tenants/public/" + myTenant)
 			.with( jwt().jwt( jwt -> jwt.claim( StandardClaimNames.PREFERRED_USERNAME, "user1")
 					.audience( List.of("https://testapi.psz.com/")))
 					.authorities(List.of(new SimpleGrantedAuthority(TenantAuthorization.READ),
@@ -118,7 +119,7 @@ class MetadataControlerTest {
 			.thenAnswer(x -> Optional.of(tenant));
 
 		String response = mockMvc.perform(
-			get("/api/v1/public/tenant/mytenant")
+			get("/api/v1/tenants/public/mytenant")
 			.with( jwt().jwt( jwt -> jwt.claim( StandardClaimNames.PREFERRED_USERNAME, "user1")
 					.audience( List.of("https://testapi.psz.com/")))
 					.authorities(List.of(new SimpleGrantedAuthority(TenantAuthorization.READ),
@@ -131,7 +132,7 @@ class MetadataControlerTest {
 	@Test
 	void givenIncorrectAuthority_whenGetTenant_thenForbidden() throws Exception{
 		mockMvc.perform(
-			get("/api/v1/public/tenant/mytenant")
+			get("/api/v1/tenants/public/mytenant")
 			.with( jwt().jwt( jwt -> jwt.claim( StandardClaimNames.PREFERRED_USERNAME, "user1")
 					.audience( List.of("https://testapi.psz.com/")))
 					.authorities(List.of(new SimpleGrantedAuthority("wrong")))))
@@ -141,7 +142,7 @@ class MetadataControlerTest {
 	@Test
 	void givenIncorrectAuthority_whendeleteTenant_thenForbidden() throws Exception{
 		mockMvc.perform(
-			delete("/api/v1/admin/tenant/mytenant")
+			delete("/api/v1/tenants/admin/mytenant")
 			.with( jwt().jwt( jwt -> jwt.claim( StandardClaimNames.PREFERRED_USERNAME, "user1")
 					.audience( List.of("https://testapi.psz.com/")))
 					.authorities(List.of(new SimpleGrantedAuthority(Scopes.ADMIN), 
@@ -151,8 +152,13 @@ class MetadataControlerTest {
 
 	@Test
 	void givenCorrectAuthorityAndAdminScope_whendeleteTenant_thenOk() throws Exception{
+		String myTenant = "mytenant";
+		TenantEntity tenant = new TenantEntityBuilder().withId(myTenant).withName(myTenant).build();
+		Mockito.when(service.getTenant(myTenant))
+			.thenAnswer(x -> Optional.of(tenant));
+
 		mockMvc.perform(
-			delete("/api/v1/admin/tenant/mytenant")
+			delete("/api/v1/tenants/admin/mytenant")
 			.with( jwt().jwt( jwt -> jwt.claim( StandardClaimNames.PREFERRED_USERNAME, "user1")
 					.audience( List.of("https://testapi.psz.com/")))
 					.authorities(List.of(new SimpleGrantedAuthority(Scopes.ADMIN), 
@@ -163,7 +169,7 @@ class MetadataControlerTest {
 	@Test
 	void givenCorrectAuthorityWithoutAdminScope_whendeleteTenant_thenForbidden() throws Exception{
 		mockMvc.perform(
-			delete("/api/v1/admin/tenant/mytenant")
+			delete("/api/v1/tenants/admin/mytenant")
 			.with( jwt().jwt( jwt -> jwt.claim( StandardClaimNames.PREFERRED_USERNAME, "user1")
 					.audience( List.of("https://testapi.psz.com/")))
 					.authorities(List.of(new SimpleGrantedAuthority(TenantAuthorization.DELETE)))))
@@ -174,27 +180,32 @@ class MetadataControlerTest {
 	void givenUserAuthenticatedAsAdmin_whenCreateTenant_thenMergeTenantServiceCalled() throws Exception{
 		String myTenant = "tenant_1";
 		TenantEntity tenant = new TenantEntityBuilder().withId(myTenant).withName(myTenant).build();
-		Mockito.when(service.mergeTenant(Mockito.any(TenantEntity.class)))
+		Mockito.when(service.mergeTenant(Mockito.any()))
 			.thenAnswer(x -> tenant);
 
 		String response = mockMvc.perform(
-			post("/api/v1/admin/tenant")
+			post("/api/v1/tenants/admin")
 			.with(  oauth2Login().authorities(
 					List.of(new SimpleGrantedAuthority(Scopes.ADMIN),
 							new SimpleGrantedAuthority(TenantAuthorization.CREATE))))
 			.content("{\r\n" + //
 					"      \"id\": \"tenant_1\",\r\n" + //
-					"      \"name\": \"tenant_1_name\"\r\n" + //					
+					"      \"name\": \"tenant_1_name\", \r\n" + //	
+					"      \"businessUnits\": [{\"id\": \"bu1\", \"name\": \"bu1_name\"}, \r\n" + //
+					"                          {\"id\": \"bu2\", \"name\": \"bu2_name\"}]  \r\n" + //					
 					"}\r\n")
 			.contentType(MediaType.APPLICATION_JSON)   
 			.with( csrf()))
 			.andExpect(status().isOk())
 			.andReturn().getResponse().getContentAsString();
 		log.info(response);
-		Mockito.verify(service).mergeTenant(tenantEntityArgumentCaptor.capture());
-		Tenant tenantArgument = tenantEntityArgumentCaptor.getValue();
+		Mockito.verify(service).mergeTenant(tenantDtoArgumentCaptor.capture());
+		Tenant tenantArgument = tenantDtoArgumentCaptor.getValue();
 		assertEquals("tenant_1", tenantArgument.getId());
 		assertEquals("tenant_1_name", tenantArgument.getName());
+		final int[] count = {0};
+		tenantArgument.getBusinessUnits().forEach( b -> count[0]++);
+		assertEquals(2, count[0]);
 	}
 
 }

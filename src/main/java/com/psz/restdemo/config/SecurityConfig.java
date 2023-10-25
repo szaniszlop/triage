@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.hateoas.config.EnableHypermediaSupport;
+import org.springframework.hateoas.config.EnableHypermediaSupport.HypermediaType;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -19,7 +21,6 @@ import org.springframework.security.web.SecurityFilterChain;
 
 import com.psz.restdemo.security.AudienceValidator;
 import com.psz.restdemo.security.Scopes;
-import com.psz.restdemo.security.SecurityLabelAuthorizationLogic;
 
 import static org.springframework.security.authorization.AuthorityAuthorizationManager.*;
 import static org.springframework.security.authorization.AuthorizationManagers.*;
@@ -28,6 +29,7 @@ import static org.springframework.security.authorization.AuthorizationManagers.*
 @EnableWebSecurity
 @EnableMethodSecurity
 @PropertySource("classpath:application.yml")
+@EnableHypermediaSupport(type = HypermediaType.HAL_FORMS)
 public class SecurityConfig {
     
     @Value("${auth0.audience}")
@@ -39,8 +41,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception{
         http.authorizeHttpRequests((customizer) ->
-            customizer.requestMatchers("/api/v1/private/**").access(anyOf( hasAuthority(Scopes.ADMIN), hasAuthority(Scopes.USER)))
-                        .requestMatchers("/api/v1/admin/**").hasAuthority(Scopes.ADMIN)
+            customizer.requestMatchers("/api/**/private/**").access(anyOf( hasAuthority(Scopes.ADMIN), hasAuthority(Scopes.USER)))
+                        .requestMatchers("/api/**/admin/**").hasAuthority(Scopes.ADMIN)
                         .anyRequest().authenticated())
             .cors(cors -> cors.configure(http))
             .oauth2ResourceServer( (oauth2) -> oauth2.jwt(Customizer.withDefaults()));

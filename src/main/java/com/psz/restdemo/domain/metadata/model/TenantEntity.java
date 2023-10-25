@@ -4,7 +4,6 @@ import java.util.Set;
 
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import com.psz.restdemo.domain.metadata.BusinessUnit;
 import com.psz.restdemo.domain.metadata.Tenant;
 import com.psz.restdemo.security.SecurityLabel;
 import com.psz.restdemo.security.SecurityLabelHolder;
@@ -16,7 +15,7 @@ import lombok.Data;
 public class TenantEntity implements Tenant, SecurityLabelHolder{
     private final String id;
     private final String name;
-    private final Set<BusinessUnit> businessUnits;
+    private final Set<BusinessUnitEntity> businessUnits;
 
     @Override
     public SecurityLabel getSecurityLabel() {
@@ -28,8 +27,9 @@ public class TenantEntity implements Tenant, SecurityLabelHolder{
         TenantEntityBuilder builder = new TenantEntityBuilder()
             .withId(tenant.getId())
             .withName(tenant.getName());
-        tenant.getBusinessUnits().stream().forEach( bu -> builder.withBusinesUnit( 
+        tenant.getBusinessUnits().forEach( bu -> builder.withBusinesUnit( 
                             new BusinessUnitEntity(bu.getId(), bu.getName())));
         return builder.build();        
     }
+
 }

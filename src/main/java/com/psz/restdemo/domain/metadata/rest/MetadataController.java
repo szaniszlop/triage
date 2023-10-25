@@ -1,12 +1,14 @@
 package com.psz.restdemo.domain.metadata.rest;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.tomcat.util.http.parser.Authorization;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,15 +25,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.psz.restdemo.domain.metadata.MetadataService;
 import com.psz.restdemo.domain.metadata.Tenant;
-import com.psz.restdemo.domain.metadata.model.TenantEntity;
-import com.psz.restdemo.domain.metadata.model.TenantEntityBuilder;
 import com.psz.restdemo.security.SecurityLabelAuthorization;
 import com.psz.restdemo.security.TenantAuthorization;
 
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
-@RequestMapping(path = "/api/v1/", produces = MediaType.APPLICATION_JSON_VALUE )
+@RequestMapping(path = "/api/v1/tenants", produces = MediaType.APPLICATION_JSON_VALUE )
 // For simplicity of this sample, allow all origins. Real applications should configure CORS for their use case.
 @CrossOrigin(origins = "*")
 @Slf4j
@@ -43,7 +43,7 @@ public class MetadataController {
     @Autowired
     private MetadataService metadataService;
 
-    @GetMapping(path = "admin/tenants")
+    @GetMapping(path = "admin")
     @PreAuthorize("hasAuthority('tenant:read')")
     @SecurityLabelAuthorization
     public HttpEntity<TenantModel[]> getTenants(){
@@ -52,7 +52,7 @@ public class MetadataController {
         return new ResponseEntity<>(tenantsModel.toArray(new TenantModel[]{}) , HttpStatus.OK) ;
     }
 
-    @GetMapping(path = "public/tenant/{id}")
+    @GetMapping(path = "public/{id}")
     @PreAuthorize("hasAuthority('" + TenantAuthorization.READ + "')")
     @SecurityLabelAuthorization
     public HttpEntity<TenantModel> getTenant(  @PathVariable String id, Authentication auth){
@@ -60,23 +60,31 @@ public class MetadataController {
             tenantModelAssembler.toModel(metadataService.getTenant(id).orElseThrow()), HttpStatus.OK);
     }
 
-    @PostMapping(path = "admin/tenant")
+    @PostMapping(path = "admin")
     @PreAuthorize("hasAuthority('" + TenantAuthorization.CREATE + "')")
-    public HttpEntity<TenantModel> createTenant(  @RequestBody TenantEntity tenant){
-        Tenant savedTenant = metadataService.mergeTenant(tenant);
+    public HttpEntity<TenantModel> createTenant(  @RequestBody TenantDto tenantModel){
+        log.info("Create Tenant {}", tenantModel.toString());
+        Tenant savedTenant = metadataService.mergeTenant(tenantModel);
         return new ResponseEntity<>(
             tenantModelAssembler.toModel(savedTenant), HttpStatus.OK);
     }
 
-    @PutMapping(path = "admin/tenant")
+    @PutMapping(path = "admin/{id}")
     @PreAuthorize("hasAuthority('" + TenantAuthorization.MODIFY + "')")
-    public Tenant changeTenant(  String id, String name){
-        return new TenantEntityBuilder().withId(id).withName(name).build();
+    public HttpEntity<Tenant> changeTenant(  @PathVariable String id, @RequestBody TenantDto tenant){
+        log.info("Update tenant {}", tenant.toString());
+        Tenant savedTenant = metadataService.mergeTenant(tenant);
+        return new ResponseEntity<>(
+            tenantModelAssembler.toModel(savedTenant), HttpStatus.OK);
     }    
 
-    @DeleteMapping(path = "admin/tenant/{id}")
+    @DeleteMapping(path = "admin/{id}")
     @PreAuthorize("hasAuthority('" + TenantAuthorization.DELETE + "')")
-    public Tenant changeTenant( @PathVariable String id){
-        return new TenantEntityBuilder().withId(id).withName("name").build();
+    public HttpEntity<Tenant> deleteTenant( @PathVariable String id){
+        log.info("Delete tenant {}", id);
+        Optional<? extends Tenant> savedTenant = metadataService.getTenant(id);
+        return savedTenant.isPresent() ? new ResponseEntity<>(
+                tenantModelAssembler.toModel(savedTenant.get()), HttpStatus.OK)    
+            : new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }    
 }
