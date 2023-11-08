@@ -11,7 +11,7 @@ import com.psz.restdemo.security.SecurityLabelHolder;
 import lombok.Data;
 
 @Data
-@Document
+@Document("tenants")
 public class TenantEntity implements Tenant, SecurityLabelHolder{
     private final String id;
     private final String name;

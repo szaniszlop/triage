@@ -1,0 +1,62 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`renders application header 1`] = `
+<div
+  className="App"
+>
+  <header
+    className="App-header"
+  >
+    <div
+      className="flex-row"
+    >
+      <div
+        className="flex-large one-third App-header-logo"
+      >
+        <div>
+          <img
+            alt="logo"
+            className=".App-logo"
+            src="/images/logo.svg"
+          />
+        </div>
+      </div>
+      <div
+        className="flex-large one-third App-header-title"
+      >
+        <h1>
+          Test app
+        </h1>
+      </div>
+      <div
+        className=" flex row App-header-user-info"
+      >
+        <button
+          onClick={[Function]}
+          type="link"
+        >
+          Login
+        </button>
+         
+          
+      </div>
+    </div>
+    <nav
+      className="flex-row App-nav"
+    >
+      <a
+        className="App-tabstop round-button button"
+        href="/about"
+        onClick={[Function]}
+      >
+         
+        About
+         
+      </a>
+    </nav>
+  </header>
+  <div
+    className="App-content"
+  />
+</div>
+`;
